@@ -91,23 +91,319 @@ def inicializar_sistema():
 
 
 # =============================================================================
+# MODO INTERACTIVO
+# =============================================================================
+
+def menu_clientes(gc):
+    """Menú para gestión de clientes."""
+    while True:
+        print("\n--- GESTIÓN DE CLIENTES ---")
+        print("1. Registrar cliente")
+        print("2. Listar clientes")
+        print("3. Volver al menú principal")
+        try:
+            opcion = int(input("Seleccione opción: "))
+        except ValueError:
+            print("Opción inválida. Intente de nuevo.")
+            continue
+
+        if opcion == 1:
+            print("\n--- REGISTRAR CLIENTE ---")
+            nombre = input("Nombre completo: ").strip()
+            email = input("Email: ").strip()
+            telefono = input("Teléfono: ").strip()
+            ciudad = input("Ciudad: ").strip()
+            try:
+                id_cliente = gc.generar_id()
+                cliente = Cliente(id_cliente, nombre, email, telefono, ciudad)
+                gc.registrar(cliente)
+                resultado_ok(f"Cliente registrado: {cliente}")
+                print(f"\n{cliente.describir()}")
+            except SoftwareFJError as e:
+                resultado_error(str(e))
+        elif opcion == 2:
+            print("\n--- LISTADO DE CLIENTES ---")
+            clientes = gc.listar_todos()
+            if not clientes:
+                print("No hay clientes registrados.")
+            else:
+                for cliente in clientes:
+                    print(f"• {cliente}")
+        elif opcion == 3:
+            break
+        else:
+            print("Opción inválida.")
+
+
+def menu_servicios(gs):
+    """Menú para gestión de servicios."""
+    while True:
+        print("\n--- GESTIÓN DE SERVICIOS ---")
+        print("1. Crear servicio")
+        print("2. Listar servicios")
+        print("3. Volver al menú principal")
+        try:
+            opcion = int(input("Seleccione opción: "))
+        except ValueError:
+            print("Opción inválida. Intente de nuevo.")
+            continue
+
+        if opcion == 1:
+            print("\n--- CREAR SERVICIO ---")
+            print("Tipos de servicio:")
+            print("1. Reserva de Sala")
+            print("2. Alquiler de Equipo")
+            print("3. Asesoría Especializada")
+            try:
+                tipo = int(input("Seleccione tipo: "))
+            except ValueError:
+                print("Tipo inválido.")
+                continue
+
+            nombre = input("Nombre del servicio: ").strip()
+            try:
+                tarifa_base = float(input("Tarifa base por hora: "))
+            except ValueError:
+                print("Tarifa inválida.")
+                continue
+
+            try:
+                if tipo == 1:
+                    capacidad_maxima = int(input("Capacidad máxima: "))
+                    tiene_proyector = input("Tiene proyector (s/n): ").strip().lower() == 's'
+                    id_servicio = gs.generar_id()
+                    servicio = ReservaSala(id_servicio, nombre, tarifa_base, capacidad_maxima, tiene_proyector)
+                elif tipo == 2:
+                    tipo_equipo = input("Tipo de equipo: ").strip()
+                    requiere_capacitacion = input("Requiere capacitación (s/n): ").strip().lower() == 's'
+                    id_servicio = gs.generar_id()
+                    servicio = AlquilerEquipo(id_servicio, nombre, tarifa_base, tipo_equipo, requiere_capacitacion)
+                elif tipo == 3:
+                    nivel_asesor = input("Nivel del asesor (junior/senior/expert): ").strip().lower()
+                    area_especialidad = input("Área de especialidad: ").strip()
+                    id_servicio = gs.generar_id()
+                    servicio = AsesoriaEspecializada(id_servicio, nombre, tarifa_base, nivel_asesor, area_especialidad)
+                else:
+                    print("Tipo inválido.")
+                    continue
+
+                gs.agregar(servicio)
+                resultado_ok(f"Servicio creado: {servicio}")
+                print(f"\n{servicio.describir()}")
+            except SoftwareFJError as e:
+                resultado_error(str(e))
+        elif opcion == 2:
+            print("\n--- LISTADO DE SERVICIOS ---")
+            servicios = gs.listar_todos()
+            if not servicios:
+                print("No hay servicios registrados.")
+            else:
+                for servicio in servicios:
+                    print(f"• {servicio}")
+        elif opcion == 3:
+            break
+        else:
+            print("Opción inválida.")
+
+
+def menu_reservas(gr, gc, gs):
+    """Menú para gestión de reservas."""
+    while True:
+        print("\n--- GESTIÓN DE RESERVAS ---")
+        print("1. Crear reserva")
+        print("2. Confirmar reserva")
+        print("3. Cancelar reserva")
+        print("4. Listar reservas")
+        print("5. Volver al menú principal")
+        try:
+            opcion = int(input("Seleccione opción: "))
+        except ValueError:
+            print("Opción inválida. Intente de nuevo.")
+            continue
+
+        if opcion == 1:
+            print("\n--- CREAR RESERVA ---")
+            # Listar clientes
+            clientes = gc.listar_todos()
+            if not clientes:
+                print("No hay clientes registrados. Registre un cliente primero.")
+                continue
+            print("Clientes disponibles:")
+            for i, c in enumerate(clientes, 1):
+                print(f"{i}. {c}")
+            try:
+                idx_cliente = int(input("Seleccione cliente (número): ")) - 1
+                cliente = clientes[idx_cliente]
+            except (ValueError, IndexError):
+                print("Selección inválida.")
+                continue
+
+            # Listar servicios
+            servicios = gs.listar_disponibles()
+            if not servicios:
+                print("No hay servicios disponibles.")
+                continue
+            print("Servicios disponibles:")
+            for i, s in enumerate(servicios, 1):
+                print(f"{i}. {s}")
+            try:
+                idx_servicio = int(input("Seleccione servicio (número): ")) - 1
+                servicio = servicios[idx_servicio]
+            except (ValueError, IndexError):
+                print("Selección inválida.")
+                continue
+
+            try:
+                duracion_horas = float(input("Duración en horas: "))
+                numero_personas = int(input("Número de personas (opcional, presione Enter para omitir): ") or 0)
+                # Para asesoría, pedir modalidad y sesiones
+                if isinstance(servicio, AsesoriaEspecializada):
+                    modalidad = input("Modalidad (presencial/virtual): ").strip().lower()
+                    numero_sesiones = int(input("Número de sesiones: "))
+                    con_informe = input("Con informe (s/n): ").strip().lower() == 's'
+                else:
+                    modalidad = None
+                    numero_sesiones = None
+                    con_informe = None
+
+                reserva = Reserva(
+                    id_reserva=gr.generar_id(),
+                    cliente=cliente,
+                    servicio=servicio,
+                    duracion_horas=duracion_horas,
+                    numero_personas=numero_personas if numero_personas > 0 else None,
+                    modalidad=modalidad,
+                    numero_sesiones=numero_sesiones,
+                    con_informe=con_informe
+                )
+                gr.registrar(reserva)
+                resultado_ok(f"Reserva creada: {reserva}")
+                print(f"\n{reserva.describir()}")
+            except SoftwareFJError as e:
+                resultado_error(str(e))
+        elif opcion == 2:
+            print("\n--- CONFIRMAR RESERVA ---")
+            reservas_pendientes = [r for r in gr.listar_todas() if r.estado == EstadoReserva.PENDIENTE]
+            if not reservas_pendientes:
+                print("No hay reservas pendientes.")
+                continue
+            print("Reservas pendientes:")
+            for i, r in enumerate(reservas_pendientes, 1):
+                print(f"{i}. {r}")
+            try:
+                idx = int(input("Seleccione reserva (número): ")) - 1
+                reserva = reservas_pendientes[idx]
+                costo = reserva.confirmar()
+                resultado_ok(f"Reserva confirmada. Costo total: ${costo:,.2f} COP")
+            except (ValueError, IndexError, SoftwareFJError) as e:
+                resultado_error(str(e))
+        elif opcion == 3:
+            print("\n--- CANCELAR RESERVA ---")
+            reservas_activas = [r for r in gr.listar_todas() if r.estado in [EstadoReserva.PENDIENTE, EstadoReserva.CONFIRMADA]]
+            if not reservas_activas:
+                print("No hay reservas activas.")
+                continue
+            print("Reservas activas:")
+            for i, r in enumerate(reservas_activas, 1):
+                print(f"{i}. {r}")
+            try:
+                idx = int(input("Seleccione reserva (número): ")) - 1
+                reserva = reservas_activas[idx]
+                motivo = input("Motivo de cancelación: ").strip()
+                reserva.cancelar(motivo)
+                resultado_ok(f"Reserva cancelada: {reserva}")
+            except (ValueError, IndexError, SoftwareFJError) as e:
+                resultado_error(str(e))
+        elif opcion == 4:
+            print("\n--- LISTADO DE RESERVAS ---")
+            reservas = gr.listar_todas()
+            if not reservas:
+                print("No hay reservas registradas.")
+            else:
+                for reserva in reservas:
+                    print(f"• {reserva}")
+        elif opcion == 5:
+            break
+        else:
+            print("Opción inválida.")
+
+
+def modo_interactivo():
+    """Ejecuta el modo interactivo con menús."""
+    separador_seccion("MODO INTERACTIVO — SOFTWARE FJ")
+    print("  Gestión interactiva de Clientes, Servicios y Reservas")
+
+    gestores = inicializar_sistema()
+    gc, gs, gr = gestores
+
+    while True:
+        print("\n--- MENÚ PRINCIPAL ---")
+        print("1. Gestión de Clientes")
+        print("2. Gestión de Servicios")
+        print("3. Gestión de Reservas")
+        print("4. Resumen del sistema")
+        print("5. Salir")
+        try:
+            opcion = int(input("Seleccione opción: "))
+        except ValueError:
+            print("Opción inválida. Intente de nuevo.")
+            continue
+
+        if opcion == 1:
+            menu_clientes(gc)
+        elif opcion == 2:
+            menu_servicios(gs)
+        elif opcion == 3:
+            menu_reservas(gr, gc, gs)
+        elif opcion == 4:
+            print("\n--- RESUMEN DEL SISTEMA ---")
+            print(f"Clientes registrados: {gc.total()}")
+            print(f"Servicios disponibles: {len(gs.listar_disponibles())}/{gs.total()}")
+            print(f"Total de reservas: {gr.total()}")
+            resumen_estados = gr.resumen()
+            print("Reservas por estado:")
+            for estado, cantidad in resumen_estados.items():
+                print(f"  • {estado}: {cantidad}")
+        elif opcion == 5:
+            print("Saliendo del modo interactivo.")
+            break
+        else:
+            print("Opción inválida.")
+
+
+# =============================================================================
 # BLOQUE DE SIMULACIONES
 # =============================================================================
 
 def ejecutar_simulaciones():
     """
-    Ejecuta las 10+ operaciones de simulación completas.
+    Ejecuta las operaciones del sistema: simulación automática o modo interactivo.
 
-    Estructura de las simulaciones:
-      OP 01-03: Registro de clientes (válidos e inválidos)
-      OP 04-06: Creación de servicios (válidos e inválidos)
-      OP 07-10: Reservas (exitosas y fallidas)
-      OP 11-13: Confirmaciones, cancelaciones y procesamiento
+    Modos disponibles:
+      - Simulación automática: Ejecuta 10+ operaciones predefinidas
+      - Modo interactivo: Menús para gestión manual
     """
 
     separador_seccion("SISTEMA INTEGRAL — SOFTWARE FJ")
     print("  Gestión de Clientes, Servicios y Reservas")
     print("  Curso: Programación 213023 | Grupo: 213023_332")
+
+    print("\nModos disponibles:")
+    print("1. Simulación automática (ejecuta todas las operaciones predefinidas)")
+    print("2. Modo interactivo (menús para operaciones manuales)")
+
+    try:
+        modo = int(input("Seleccione modo (1 o 2): "))
+    except ValueError:
+        print("Entrada inválida. Ejecutando simulación automática por defecto.")
+        modo = 1
+
+    if modo == 2:
+        modo_interactivo()
+        return  # Salir después del modo interactivo
+
+    # Modo 1: Simulación automática
+    print("\nEjecutando simulación automática...")
 
     # Inicializamos gestores
     gestores = inicializar_sistema()
@@ -525,6 +821,8 @@ def ejecutar_simulaciones():
     print(f"  {'─'*55}\n")
 
     log.info("Simulación completa finalizada. Sistema estable.")
+
+
 
 
 # =============================================================================

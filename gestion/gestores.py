@@ -17,7 +17,9 @@ from utils.excepciones import (
     ReservaNoEncontradaError,
 )
 from utils.logger import log
+    
 
+    
 
 # =============================================================================
 # GESTOR DE CLIENTES
@@ -34,7 +36,14 @@ class GestorClientes:
     def __init__(self):
         # Diccionario principal: clave = id_cliente, valor = objeto Cliente
         self._clientes: dict = {}
+        self._contador_id = 1  # Para generar IDs automáticos
         log.debug("GestorClientes inicializado.")
+
+    def generar_id(self) -> str:
+        """Genera un ID único para un nuevo cliente."""
+        id_generado = f"CLI{self._contador_id:03d}"
+        self._contador_id += 1
+        return id_generado
 
     def registrar(self, cliente) -> None:
         """
@@ -128,7 +137,14 @@ class GestorServicios:
 
     def __init__(self):
         self._servicios: dict = {}
+        self._contador_id = 1  # Para generar IDs automáticos
         log.debug("GestorServicios inicializado.")
+
+    def generar_id(self) -> str:
+        """Genera un ID único para un nuevo servicio."""
+        id_generado = f"SER{self._contador_id:03d}"
+        self._contador_id += 1
+        return id_generado
 
     def agregar(self, servicio) -> None:
         """
@@ -206,7 +222,11 @@ class GestorReservas:
         self._reservas: dict = {}
         self._contador_id = 1   # Para generar IDs automáticos si se necesita
         log.debug("GestorReservas inicializado.")
-
+    def generar_id(self) -> str:
+        """Genera un ID único para una nueva reserva."""
+        id_generado = f"RES{self._contador_id:04d}"
+        self._contador_id += 1
+        return id_generado
     def registrar(self, reserva) -> None:
         """
         Registra una nueva reserva en el sistema.
