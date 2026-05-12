@@ -45,8 +45,94 @@ from modelos.cliente import Cliente
 from servicios.servicios import ReservaSala, AlquilerEquipo, AsesoriaEspecializada
 from modelos.reserva import Reserva, EstadoReserva
 from gestion.gestores import GestorClientes, GestorServicios, GestorReservas
+from datetime import datetime
 
+# =============================================================================
+# EXPORTAR REPORTE TXT
+# =============================================================================
 
+def exportar_reporte_txt(gc, gs, gr):
+
+    try:
+
+        with open("reporte.txt", "w", encoding="utf-8") as archivo:
+
+            archivo.write(
+                "========== REPORTE SOFTWARE FJ ==========\n\n"
+            )
+
+            archivo.write(
+                f"Fecha del reporte: {datetime.now()}\n\n"
+            )
+
+            archivo.write(
+                f"Clientes registrados: {gc.total()}\n"
+            )
+
+            archivo.write(
+                f"Servicios registrados: {gs.total()}\n"
+            )
+
+            archivo.write(
+                f"Reservas registradas: {gr.total()}\n\n"
+            )
+
+            archivo.write(
+                "========== CLIENTES ==========\n"
+            )
+
+            for cliente in gc.listar_todos():
+
+                archivo.write(
+                    f"{cliente}\n"
+                )
+
+            archivo.write(
+                "\n========== SERVICIOS ==========\n"
+            )
+
+            for servicio in gs.listar_todos():
+
+                archivo.write(
+                    f"{servicio}\n"
+                )
+
+            archivo.write(
+                "\n========== RESERVAS ==========\n"
+            )
+
+            ingresos = 0
+
+            for reserva in gr.listar_todas():
+
+                archivo.write(
+                    f"{reserva}\n"
+                )
+
+                try:
+
+                    if reserva.estado == EstadoReserva.CONFIRMADA:
+
+                        ingresos += reserva.calcular_costo_total()
+
+                except Exception:
+                    pass
+
+            archivo.write(
+                f"\nIngresos simulados: ${ingresos:,.2f} COP\n"
+            )
+
+        print("\n✅ Reporte exportado correctamente")
+        print("📄 Archivo generado: reporte.txt")
+
+        log.info("Reporte TXT exportado correctamente.")
+
+    except Exception as e:
+
+        print(f"\n❌ Error exportando reporte: {e}")
+
+        log.error(f"Error exportando reporte TXT: {e}")
+      
 # =============================================================================
 # FUNCIONES AUXILIARES DE PRESENTACIÓN
 # =============================================================================
@@ -364,7 +450,14 @@ def modo_interactivo():
             print("Reservas por estado:")
             for estado, cantidad in resumen_estados.items():
                 print(f"  • {estado}: {cantidad}")
+              
+# =============================================================================
+# CREACION DEL REPORTE TXT
+# =============================================================================
+
         elif opcion == 5:
+                exportar_reporte_txt(gc, gs, gr)
+        elif opcion == 6:
             print("Saliendo del modo interactivo.")
             break
         else:
